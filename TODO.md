@@ -43,18 +43,20 @@ src/
 
 ---
 
-## Phase 2: UI & Feedback
+## Phase 2: UI & Feedback ✅
 > Make it feel satisfying to click
 
-- [ ] Create RemoteEvent in ReplicatedStorage for click feedback
-- [ ] Create `src/client/MeatballsUI.client.luau`
-  - [ ] ScreenGui with Meatballs counter (TextLabel)
-  - [ ] Style: Bright red background, white text, fun font
-  - [ ] Update display when leaderstats change
-- [ ] Create `src/client/ClickFeedback.client.luau`
-  - [ ] Pop-up "+1" text that floats up and fades
-  - [ ] Tween pot scale (1.0 → 1.1 → 1.0) on click
-  - [ ] Placeholder for sound effect (print for now)
+- [x] Create RemoteEvent in ReplicatedStorage for click feedback (done in PotManager)
+- [x] Create `src/client/MeatballsUI.client.luau`
+  - [x] ScreenGui with Meatballs counter (TextLabel)
+  - [x] Style: Bright red background, white text, FredokaOne font
+  - [x] Update display when leaderstats change
+  - [x] "Pop" animation when counter updates
+- [x] Create `src/client/ClickFeedback.client.luau`
+  - [x] Pop-up "+X" text that floats up and fades (gold color)
+  - [x] Tween pot scale (1.0 → 1.1 → 1.0) on click
+  - [x] Placeholder for sound effect (ready for asset)
+  - [x] Object pooling for floating text performance
 
 ---
 
