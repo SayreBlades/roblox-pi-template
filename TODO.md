@@ -26,19 +26,20 @@ src/
 > Get the foundation working: data, pot, clicking
 
 - [x] Remove old lava scripts
-- [ ] Create `src/shared/GameConfig.luau` - game constants
-- [ ] Create `src/server/PlayerDataManager.server.luau`
-  - [ ] Create DataStore "SauceTycoon"
-  - [ ] Create leaderstats folder with "Meatballs" IntValue
-  - [ ] Load player data on join
-  - [ ] Save player data on leave
-  - [ ] Autosave every 30 seconds
-- [ ] Create `src/server/PotManager.server.luau`
-  - [ ] Spawn a pot (Cylinder) for each player when they join
-  - [ ] Position pot near player spawn
-  - [ ] Add ClickDetector to pot
-  - [ ] Award Meatballs on click (using SauceMultiplier)
-  - [ ] Fire RemoteEvent to client for feedback
+- [x] Create `src/shared/GameConfig.luau` - game constants
+- [x] Create `src/server/PlayerDataManager.server.luau`
+  - [x] Create DataStore "SauceTycoon"
+  - [x] Create leaderstats folder with "Meatballs" IntValue
+  - [x] Load player data on join
+  - [x] Save player data on leave
+  - [x] Autosave every 30 seconds
+- [x] Create `src/server/PotManager.server.luau`
+  - [x] Spawn a pot (Cylinder) for each player when they join
+  - [x] Position pot near player spawn
+  - [x] Add ClickDetector to pot
+  - [x] Award Meatballs on click (using SauceMultiplier)
+  - [x] Fire RemoteEvent to client for feedback
+  - [x] Added "STIR THE SAUCE!" billboard text above pot
 
 ---
 
