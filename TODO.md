@@ -60,19 +60,21 @@ src/
 
 ---
 
-## Phase 3: Upgrade System
+## Phase 3: Upgrade System ✅
 > First upgrade: "Buy Spoon" increases click power
 
-- [ ] Add to GameConfig: SPOON_BASE_PRICE = 10, PRICE_MULTIPLIER = 1.15
-- [ ] Create `src/server/UpgradeManager.server.luau`
-  - [ ] RemoteEvent for purchase requests
-  - [ ] Calculate cost: BasePrice * (1.15 ^ AmountOwned)
-  - [ ] Deduct Meatballs, increase SauceMultiplier
-  - [ ] Save upgrade count to DataStore
-- [ ] Add upgrade button to MeatballsUI
-  - [ ] Show current cost
-  - [ ] Fire RemoteEvent on click
-  - [ ] Disable if can't afford
+- [x] Add to GameConfig: SPOON_BASE_PRICE = 10, PRICE_MULTIPLIER = 1.15 (already there!)
+- [x] Create `src/server/UpgradeManager.server.luau`
+  - [x] RemoteEvent for purchase requests
+  - [x] RemoteFunction to get upgrade info (cost, power)
+  - [x] Calculate cost: BasePrice * (1.15 ^ AmountOwned)
+  - [x] Deduct Meatballs, increase SauceMultiplier
+  - [x] Upgrade count saved via PlayerDataManager (uses attributes)
+- [x] Add upgrade button to MeatballsUI
+  - [x] Show current cost
+  - [x] Fire RemoteEvent on click
+  - [x] Gray out if can't afford
+  - [x] Show current click power
 
 ---
 
