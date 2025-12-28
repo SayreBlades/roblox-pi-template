@@ -18,6 +18,9 @@
     },
     "Workspace": {
       "$className": "Workspace",
+      "walls": {
+        "$path": "src/workspace/walls.rbxm"
+      },
       "Baseplate": {
         "$className": "Part",
         "$properties": {
