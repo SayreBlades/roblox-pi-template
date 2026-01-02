@@ -9,14 +9,13 @@ local Workspace = game:GetService("Workspace")
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
 local AssetIds = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AssetIds"))
 
--- Cache the cauldron template (load once, clone for each player)
+-- Cache templates (load once, clone for each player)
 local cauldronTemplate = nil
+local meatballTemplate = nil
 
-local function loadCauldronTemplate()
-	if cauldronTemplate then return cauldronTemplate end
-	
+local function loadAssetTemplate(assetId, name)
 	local success, result = pcall(function()
-		return InsertService:LoadAsset(AssetIds.Cauldron)
+		return InsertService:LoadAsset(assetId)
 	end)
 	
 	if success and result then
@@ -29,14 +28,25 @@ local function loadCauldronTemplate()
 				end
 			end
 			model.Parent = nil  -- Keep in memory, not in workspace
-			cauldronTemplate = model
-			print("[PotManager] Loaded cauldron template")
-			return cauldronTemplate
+			print("[PotManager] Loaded", name, "template")
+			return model
 		end
 	end
 	
-	warn("[PotManager] Failed to load cauldron, using fallback cylinder")
+	warn("[PotManager] Failed to load", name)
 	return nil
+end
+
+local function loadCauldronTemplate()
+	if cauldronTemplate then return cauldronTemplate end
+	cauldronTemplate = loadAssetTemplate(AssetIds.Cauldron, "cauldron")
+	return cauldronTemplate
+end
+
+local function loadMeatballTemplate()
+	if meatballTemplate then return meatballTemplate end
+	meatballTemplate = loadAssetTemplate(AssetIds.Meatball, "meatball")
+	return meatballTemplate
 end
 
 -- Create RemoteEvent for click feedback (client will listen)
@@ -72,6 +82,34 @@ local function createPot(player: Player)
 		
 		-- Position the cauldron
 		potModel:PivotTo(CFrame.new(GameConfig.POT_OFFSET))
+		
+		-- Add meatballs to the cauldron
+		local meatballTmpl = loadMeatballTemplate()
+		if meatballTmpl then
+			local meatballsFolder = Instance.new("Folder")
+			meatballsFolder.Name = "Meatballs"
+			meatballsFolder.Parent = potModel
+			
+			local potCenter = GameConfig.POT_OFFSET
+			local meatballCount = 5
+			
+			for i = 1, meatballCount do
+				local meatball = meatballTmpl:Clone()
+				meatball.Name = "Meatball" .. i
+				meatball.Anchored = true
+				meatball.CanCollide = true  -- Player can walk on meatballs
+				meatball.Size = meatball.Size * 0.5  -- Scale down
+				
+				-- Position in a circle inside the cauldron
+				local angle = (i / meatballCount) * math.pi * 2
+				local radius = 1.2  -- Closer together
+				local xOff = math.cos(angle) * radius
+				local zOff = math.sin(angle) * radius
+				
+				meatball.Position = Vector3.new(potCenter.X + xOff, potCenter.Y + 2.2, potCenter.Z + zOff)
+				meatball.Parent = meatballsFolder
+			end
+		end
 	else
 		-- Fallback: create cylinder pot
 		potModel = Instance.new("Model")
@@ -89,13 +127,29 @@ local function createPot(player: Player)
 		pot.Parent = potModel
 	end
 	
-	-- Add ClickDetector to main part
-	local clickDetector = Instance.new("ClickDetector")
-	clickDetector.MaxActivationDistance = 20
-	clickDetector.Parent = pot
+	-- Add ClickDetector to all cauldron parts (not meatballs)
+	for _, part in ipairs(potModel:GetDescendants()) do
+		if part:IsA("BasePart") and part.Parent.Name ~= "Meatballs" then
+			local clickDetector = Instance.new("ClickDetector")
+			clickDetector.MaxActivationDistance = 20
+			clickDetector.Parent = part
+		end
+	end
 	
-	-- Handle clicks
-	clickDetector.MouseClick:Connect(function(clickingPlayer)
+	-- Track animation state and meatball base positions
+	local isAnimating = false
+	local meatballBases = {}
+	
+	-- Store base positions for meatballs
+	local meatballsFolder = potModel:FindFirstChild("Meatballs")
+	if meatballsFolder then
+		for _, meatball in ipairs(meatballsFolder:GetChildren()) do
+			meatballBases[meatball] = meatball.Position
+		end
+	end
+	
+	-- Click handler function
+	local function onPotClicked(clickingPlayer)
 		-- Only the pot owner can click their pot
 		if clickingPlayer ~= player then
 			return
@@ -114,12 +168,82 @@ local function createPot(player: Player)
 			end
 		end
 		
+		-- Animate meatballs bouncing and jittering
+		if meatballsFolder and not isAnimating then
+			isAnimating = true
+			task.spawn(function()
+				-- Bounce and jitter animation
+				local bounceHeight = {}
+				local jitterOffset = {}
+				
+				for _, meatball in ipairs(meatballsFolder:GetChildren()) do
+					bounceHeight[meatball] = math.random(18, 28) / 10  -- Higher bounce
+					jitterOffset[meatball] = Vector3.new(
+						(math.random() - 0.5) * 0.6,
+						0,
+						(math.random() - 0.5) * 0.6
+					)
+				end
+				
+				-- Bounce up with jitter
+				for step = 1, 10 do
+					local t = step / 10
+					local height = math.sin(t * math.pi)
+					for _, meatball in ipairs(meatballsFolder:GetChildren()) do
+						local base = meatballBases[meatball]
+						if base then
+							local jitter = jitterOffset[meatball] * t
+							meatball.Position = base + Vector3.new(jitter.X, height * bounceHeight[meatball], jitter.Z)
+							-- Add rotation jitter
+							meatball.CFrame = meatball.CFrame * CFrame.Angles(
+								math.rad(math.random(-12, 12)),
+								math.rad(math.random(-12, 12)),
+								math.rad(math.random(-12, 12))
+							)
+						end
+					end
+					task.wait(0.025)
+				end
+				
+				-- Small secondary bounce
+				for step = 1, 6 do
+					local t = step / 6
+					local height = math.sin(t * math.pi) * 0.5
+					for _, meatball in ipairs(meatballsFolder:GetChildren()) do
+						local base = meatballBases[meatball]
+						if base then
+							local jitter = jitterOffset[meatball]
+							meatball.Position = base + Vector3.new(jitter.X * (1-t), height, jitter.Z * (1-t))
+						end
+					end
+					task.wait(0.02)
+				end
+				
+				-- Return to base positions
+				for _, meatball in ipairs(meatballsFolder:GetChildren()) do
+					local base = meatballBases[meatball]
+					if base then
+						meatball.Position = base
+					end
+				end
+				
+				isAnimating = false
+			end)
+		end
+		
 		-- Fire feedback event to client
 		clickFeedbackEvent:FireClient(player, {
 			amount = meatballsEarned,
-			potPosition = pot.Position,
+			potPosition = potModel:GetPivot().Position,
 		})
-	end)
+	end
+	
+	-- Connect click handler to all click detectors
+	for _, part in ipairs(potModel:GetDescendants()) do
+		if part:IsA("ClickDetector") then
+			part.MouseClick:Connect(onPotClicked)
+		end
+	end
 	
 	-- Add floating text above pot
 	local billboardGui = Instance.new("BillboardGui")
