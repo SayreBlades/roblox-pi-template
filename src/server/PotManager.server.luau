@@ -3,9 +3,41 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local InsertService = game:GetService("InsertService")
 local Workspace = game:GetService("Workspace")
 
 local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
+local AssetIds = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("AssetIds"))
+
+-- Cache the cauldron template (load once, clone for each player)
+local cauldronTemplate = nil
+
+local function loadCauldronTemplate()
+	if cauldronTemplate then return cauldronTemplate end
+	
+	local success, result = pcall(function()
+		return InsertService:LoadAsset(AssetIds.Cauldron)
+	end)
+	
+	if success and result then
+		local model = result:GetChildren()[1]
+		if model then
+			-- Remove any scripts from the template
+			for _, desc in ipairs(model:GetDescendants()) do
+				if desc:IsA("Script") or desc:IsA("LocalScript") then
+					desc:Destroy()
+				end
+			end
+			model.Parent = nil  -- Keep in memory, not in workspace
+			cauldronTemplate = model
+			print("[PotManager] Loaded cauldron template")
+			return cauldronTemplate
+		end
+	end
+	
+	warn("[PotManager] Failed to load cauldron, using fallback cylinder")
+	return nil
+end
 
 -- Create RemoteEvent for click feedback (client will listen)
 local clickFeedbackEvent = Instance.new("RemoteEvent")
@@ -17,25 +49,47 @@ local playerPots = {}
 
 -- Create the sauce pot for a player
 local function createPot(player: Player)
-	-- Create pot container (Model)
-	local potModel = Instance.new("Model")
-	potModel.Name = player.Name .. "_Pot"
+	-- Try to use cauldron, fallback to cylinder
+	local template = loadCauldronTemplate()
 	
-	-- Create the main pot (cylinder)
-	local pot = Instance.new("Part")
-	pot.Name = "Pot"
-	pot.Shape = Enum.PartType.Cylinder
-	pot.Size = GameConfig.POT_SIZE
-	pot.Color = GameConfig.POT_COLOR
-	pot.Material = GameConfig.POT_MATERIAL
-	pot.Anchored = true
-	pot.CanCollide = true
+	local potModel
+	local pot  -- The main part to attach ClickDetector to
 	
-	-- Rotate cylinder to be upright (cylinders default to horizontal)
-	pot.CFrame = CFrame.new(GameConfig.POT_OFFSET) * CFrame.Angles(0, 0, math.rad(90))
-	pot.Parent = potModel
+	if template then
+		-- Clone the cauldron model
+		potModel = template:Clone()
+		potModel.Name = player.Name .. "_Pot"
+		
+		-- Find the primary part or first part for click detection
+		pot = potModel.PrimaryPart or potModel:FindFirstChildWhichIsA("BasePart")
+		
+		-- Make all parts anchored
+		for _, part in ipairs(potModel:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+			end
+		end
+		
+		-- Position the cauldron
+		potModel:PivotTo(CFrame.new(GameConfig.POT_OFFSET))
+	else
+		-- Fallback: create cylinder pot
+		potModel = Instance.new("Model")
+		potModel.Name = player.Name .. "_Pot"
+		
+		pot = Instance.new("Part")
+		pot.Name = "Pot"
+		pot.Shape = Enum.PartType.Cylinder
+		pot.Size = GameConfig.POT_SIZE
+		pot.Color = GameConfig.POT_COLOR
+		pot.Material = GameConfig.POT_MATERIAL
+		pot.Anchored = true
+		pot.CanCollide = true
+		pot.CFrame = CFrame.new(GameConfig.POT_OFFSET) * CFrame.Angles(0, 0, math.rad(90))
+		pot.Parent = potModel
+	end
 	
-	-- Add ClickDetector
+	-- Add ClickDetector to main part
 	local clickDetector = Instance.new("ClickDetector")
 	clickDetector.MaxActivationDistance = 20
 	clickDetector.Parent = pot
@@ -72,6 +126,7 @@ local function createPot(player: Player)
 	billboardGui.Name = "PotLabel"
 	billboardGui.Size = UDim2.new(0, 200, 0, 50)
 	billboardGui.StudsOffset = Vector3.new(0, 4, 0)
+	billboardGui.AlwaysOnTop = true  -- Render in front of geometry
 	billboardGui.Adornee = pot
 	billboardGui.Parent = pot
 	

@@ -11,7 +11,7 @@ GameConfig.BASE_CLICK_VALUE = 1
 GameConfig.POT_SIZE = Vector3.new(8, 4, 8)  -- Cylinder dimensions
 GameConfig.POT_COLOR = Color3.fromRGB(200, 30, 30)  -- Marinara red
 GameConfig.POT_MATERIAL = Enum.Material.SmoothPlastic
-GameConfig.POT_OFFSET = Vector3.new(10, 2, 0)  -- Offset from spawn
+GameConfig.POT_OFFSET = Vector3.new(10, 1.5, 0)  -- Offset from spawn
 
 -- Upgrade: Spoon
 GameConfig.SPOON_BASE_PRICE = 10
